@@ -1,0 +1,2385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Deloitte Compliance Agent</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root {
+    --dl-green: #86BC25;
+    --dl-green-dark: #6ea01e;
+    --dl-neon: #86EB22;
+    --dl-black: #000000;
+    --dl-dark: #282728;
+    --dl-gray: #E6E6E6;
+    --dl-gray-light: #F5F5F5;
+    --dl-gray-bg: #FAFAFA;
+    --dl-text: #282728;
+    --dl-text-soft: #555555;
+    --dl-text-faint: #888888;
+    --dl-blue: #00A3E0;
+    --dl-amber: #E8A317;
+    --dl-red: #DA291C;
+    --dl-white: #FFFFFF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--dl-gray-bg);
+    color: var(--dl-text);
+    font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ========== Brand header bar ========== */
+  .brand-bar {
+    height: 4px;
+    background: var(--dl-green);
+    width: 100%;
+  }
+  .topnav {
+    background: var(--dl-white);
+    border-bottom: 1px solid var(--dl-gray);
+    padding: 18px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .logo {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+    color: var(--dl-black);
+    display: flex;
+    align-items: baseline;
+    gap: 1px;
+  }
+  .logo .dot { color: var(--dl-green); font-size: 28px; line-height: 0.5; margin-left: 1px; }
+  .product-name {
+    font-size: 12px;
+    color: var(--dl-text-soft);
+    font-weight: 400;
+    margin-left: 14px;
+    padding-left: 14px;
+    border-left: 1px solid var(--dl-gray);
+  }
+  .topnav-meta {
+    font-size: 11px;
+    color: var(--dl-text-faint);
+  }
+  .topnav-meta b { color: var(--dl-text); font-weight: 600; }
+
+  .wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 36px 40px 60px;
+  }
+
+  /* ========== Page intro ========== */
+  .intro {
+    margin-bottom: 32px;
+  }
+  .intro h1 {
+    font-size: 36px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .intro h1 em {
+    font-style: italic;
+    color: var(--dl-green);
+    font-weight: 700;
+  }
+  .intro p {
+    color: var(--dl-text-soft);
+    max-width: 720px;
+    font-size: 15px;
+  }
+
+  /* ========== Step indicator ========== */
+  .step-indicator {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-bottom: 36px;
+    background: var(--dl-white);
+    border: 1px solid var(--dl-gray);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .step-ind {
+    padding: 14px 16px;
+    border-right: 1px solid var(--dl-gray);
+    background: var(--dl-white);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s;
+  }
+  .step-ind:last-child { border-right: none; }
+  .step-ind.active { background: var(--dl-black); color: var(--dl-white); }
+  .step-ind.done { background: var(--dl-gray-light); }
+  .step-ind-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--dl-gray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+  .step-ind.active .step-ind-num { background: var(--dl-green); border-color: var(--dl-green); color: var(--dl-white); }
+  .step-ind.done .step-ind-num { background: var(--dl-green); border-color: var(--dl-green); color: var(--dl-white); }
+  .step-ind-label {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+  .step-ind.active .step-ind-label { color: var(--dl-white); }
+
+  /* ========== Carousel ========== */
+  .carousel-stage {
+    position: relative;
+    height: auto;
+    min-height: 540px;
+    margin-bottom: 24px;
+    overflow: visible;
+  }
+  .carousel-track {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+  .step-card {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 100%;
+    max-width: 760px;
+    background: var(--dl-white);
+    border: 1px solid var(--dl-gray);
+    border-radius: 8px;
+    padding: 36px 40px;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.06);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center center;
+  }
+  .step-card.active {
+    transform: translateX(-50%) translateY(0) scale(1);
+    opacity: 1;
+    z-index: 5;
+    pointer-events: auto;
+  }
+  .step-card.next-peek {
+    transform: translateX(calc(-50% + 280px)) translateY(20px) scale(0.92);
+    opacity: 0.35;
+    filter: blur(2px);
+    z-index: 3;
+    pointer-events: none;
+  }
+  .step-card.future {
+    transform: translateX(calc(-50% + 360px)) translateY(40px) scale(0.85);
+    opacity: 0.15;
+    filter: blur(3px);
+    z-index: 2;
+    pointer-events: none;
+  }
+  .step-card.gone-left {
+    transform: translateX(-150%) translateY(0) scale(0.85);
+    opacity: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .step-num-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--dl-green);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 14px;
+  }
+  .step-num-tag::before {
+    content: '';
+    width: 24px;
+    height: 2px;
+    background: var(--dl-green);
+  }
+  .step-title {
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    margin-bottom: 10px;
+  }
+  .step-title em {
+    font-style: italic;
+    color: var(--dl-green);
+    font-weight: 700;
+  }
+  .step-sub {
+    color: var(--dl-text-soft);
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  /* Requirements box */
+  .req-box {
+    background: var(--dl-gray-light);
+    border-left: 3px solid var(--dl-green);
+    padding: 14px 18px;
+    margin-bottom: 22px;
+    border-radius: 0 4px 4px 0;
+  }
+  .req-box-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--dl-green);
+    margin-bottom: 8px;
+  }
+  .req-box ul {
+    margin: 0; padding-left: 18px;
+    font-size: 13px;
+    color: var(--dl-text-soft);
+    line-height: 1.6;
+  }
+  .req-box li b { color: var(--dl-text); font-weight: 600; }
+
+  /* Upload zone */
+  .dropzone {
+    background: var(--dl-gray-bg);
+    border: 1.5px dashed var(--dl-gray);
+    border-radius: 6px;
+    padding: 26px 22px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 12px;
+  }
+  .dropzone:hover { border-color: var(--dl-green); background: rgba(134, 188, 37, 0.04); }
+  .dropzone.dragging { border-color: var(--dl-green); background: rgba(134, 188, 37, 0.1); }
+  .dz-icon {
+    font-size: 28px;
+    color: var(--dl-green);
+    line-height: 1;
+    margin-bottom: 6px;
+    font-weight: 300;
+  }
+  .dz-prompt {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .dz-hint {
+    font-size: 12px;
+    color: var(--dl-text-faint);
+  }
+  .file-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .file-row {
+    background: var(--dl-white);
+    border: 1px solid var(--dl-gray);
+    border-radius: 4px;
+    padding: 10px 14px;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    gap: 12px;
+    align-items: center;
+    font-size: 13px;
+  }
+  .ftype {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    background: var(--dl-black);
+    color: var(--dl-white);
+    padding: 3px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .fname { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fsize { color: var(--dl-text-faint); font-size: 11px; }
+  .fclear {
+    background: transparent;
+    border: none;
+    color: var(--dl-red);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    padding: 4px 8px;
+    font-weight: 600;
+  }
+  .fclear:hover { text-decoration: underline; }
+
+  .add-more-btn {
+    background: transparent;
+    border: 1px dashed var(--dl-text-soft);
+    color: var(--dl-text);
+    padding: 8px 16px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+  }
+  .add-more-btn:hover {
+    background: var(--dl-black);
+    color: var(--dl-white);
+    border-style: solid;
+    border-color: var(--dl-black);
+  }
+
+  /* Buttons OUTSIDE card (carousel control row) */
+  .carousel-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 760px;
+    margin: 24px auto 0;
+    padding: 0 4px;
+  }
+  .carousel-controls .left-side, .carousel-controls .right-side {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn {
+    background: var(--dl-green);
+    color: var(--dl-white);
+    border: none;
+    padding: 12px 24px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover:not(:disabled) {
+    background: var(--dl-green-dark);
+    transform: translateY(-1px);
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.secondary {
+    background: transparent;
+    color: var(--dl-text);
+    border: 1.5px solid var(--dl-text-soft);
+  }
+  .btn.secondary:hover:not(:disabled) {
+    background: var(--dl-black);
+    color: var(--dl-white);
+    border-color: var(--dl-black);
+  }
+  .btn.outline-green {
+    background: transparent;
+    color: var(--dl-green);
+    border: 1.5px solid var(--dl-green);
+  }
+  .btn.outline-green:hover:not(:disabled) {
+    background: var(--dl-green);
+    color: var(--dl-white);
+  }
+  .btn.large { padding: 16px 32px; font-size: 14px; }
+  .btn.dark {
+    background: var(--dl-black);
+  }
+  .btn.dark:hover:not(:disabled) {
+    background: var(--dl-dark);
+  }
+
+  /* Run zone — special card 3 */
+  .run-zone {
+    background: var(--dl-black);
+    color: var(--dl-white);
+    border-radius: 6px;
+    padding: 28px 32px;
+    margin-bottom: 18px;
+  }
+  .run-zone-title {
+    font-size: 22px;
+    font-weight: 300;
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+  .run-zone-title em { font-style: italic; color: var(--dl-neon); font-weight: 700; }
+  .run-zone-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 18px;
+  }
+
+  /* Progress section */
+  .progress-section {
+    background: var(--dl-gray-light);
+    border-radius: 6px;
+    padding: 22px 26px;
+    margin-top: 16px;
+    display: none;
+  }
+  .progress-section.show { display: block; }
+  .progress-bar-wrap {
+    height: 4px;
+    background: var(--dl-gray);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .progress-bar {
+    height: 100%;
+    background: var(--dl-green);
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+  .progress-status {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--dl-text-soft);
+  }
+  .progress-log {
+    margin-top: 14px;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 11px;
+    color: var(--dl-text-faint);
+    max-height: 110px;
+    overflow-y: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--dl-gray);
+  }
+  .progress-log div { padding: 1px 0; }
+  .progress-log div::before { content: '› '; color: var(--dl-green); font-weight: 700; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    display: inline-block;
+    width: 11px; height: 11px;
+    border: 1.5px solid var(--dl-gray);
+    border-top-color: var(--dl-green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  /* ========== Step 04: Results page ========== */
+  .results-section { display: none; }
+  .results-section.show { display: block; }
+
+  /* Compact step summary at top once we're at step 4 */
+  .progress-summary {
+    display: none;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .progress-summary.show { display: grid; }
+  .ps-card {
+    background: var(--dl-white);
+    border: 1px solid var(--dl-gray);
+    border-radius: 4px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .ps-num {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--dl-green);
+    color: var(--dl-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .ps-num::after { content: '✓'; }
+  .ps-num span { display: none; }
+  .ps-info { flex: 1; min-width: 0; }
+  .ps-info-label { font-size: 11px; color: var(--dl-text-faint); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  .ps-info-value { font-size: 13px; font-weight: 600; color: var(--dl-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .stat {
+    background: var(--dl-white);
+    border: 1px solid var(--dl-gray);
+    border-radius: 6px;
+    padding: 22px 24px;
+    border-left: 3px solid var(--dl-green);
+  }
+  .stat-num {
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .stat-num.green { color: var(--dl-green); }
+  .stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--dl-text-faint);
+    font-weight: 600;
+  }
+
+  /* Notification block: Open Outlook + Preview */
+  .notify-primary {
+    background: var(--dl-black);
+    color: var(--dl-white);
+    border-radius: 8px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: center;
+  }
+  .notify-primary-title {
+    font-size: 22px;
+    font-weight: 300;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+  .notify-primary-title em { font-style: italic; color: var(--dl-neon); font-weight: 700; }
+  .notify-primary-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.55);
+  }
+  .notify-primary-actions {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .notify-primary-actions .btn {
+    background: var(--dl-green);
+  }
+  .notify-primary-actions .btn:hover {
+    background: var(--dl-neon);
+    color: var(--dl-black);
+  }
+  .notify-primary-actions .btn.secondary {
+    background: transparent;
+    color: var(--dl-white);
+    border: 1.5px solid rgba(255,255,255,0.4);
+  }
+  .notify-primary-actions .btn.secondary:hover {
+    background: rgba(255,255,255,0.12);
+    border-color: var(--dl-white);
+  }
+
+  /* Then 3 steps: email body / recipients / attachment */
+  .notify-steps-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .notify-steps-sub {
+    color: var(--dl-text-soft);
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .notify-steps {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+  .notify-step {
+    background: var(--dl-white);
+    border: 1px solid var(--dl-gray);
+    border-radius: 6px;
+    padding: 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-top: 3px solid var(--dl-green);
+    transition: all 0.2s;
+  }
+  .notify-step:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+  }
+  .notify-step-num {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--dl-green);
+  }
+  .notify-step-label {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .notify-step-hint {
+    font-size: 12px;
+    color: var(--dl-text-soft);
+    line-height: 1.5;
+    flex: 1;
+  }
+  .notify-step-hint b { color: var(--dl-text); font-weight: 700; }
+  .notify-action-btn {
+    background: var(--dl-green);
+    color: var(--dl-white);
+    border: none;
+    padding: 10px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 4px;
+    width: 100%;
+    transition: all 0.2s;
+  }
+  .notify-action-btn:hover { background: var(--dl-green-dark); }
+  .notify-action-btn.copied { background: var(--dl-blue); }
+  .notify-action-btn.copied::before { content: '✓ '; }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+    align-items: center;
+  }
+  .filter-bar input[type=text] {
+    flex: 1;
+    min-width: 220px;
+    padding: 9px 14px;
+    border: 1px solid var(--dl-gray);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 13px;
+    background: var(--dl-white);
+  }
+  .filter-bar input[type=text]:focus { outline: none; border-color: var(--dl-green); }
+  .filter-pill {
+    padding: 7px 13px;
+    border: 1px solid var(--dl-gray);
+    background: var(--dl-white);
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-pill.active { background: var(--dl-black); color: var(--dl-white); border-color: var(--dl-black); }
+  .filter-pill:hover:not(.active) { border-color: var(--dl-green); color: var(--dl-green); }
+
+  /* Grouped table */
+  .grouped-list {
+    background: var(--dl-white);
+    border: 1px solid var(--dl-gray);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .person-group {
+    border-bottom: 1px solid var(--dl-gray);
+  }
+  .person-group:last-child { border-bottom: none; }
+  .person-header {
+    background: var(--dl-gray-light);
+    padding: 12px 18px;
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1fr auto;
+    gap: 16px;
+    align-items: center;
+    border-left: 3px solid var(--dl-green);
+  }
+  .person-header.no-email { border-left-color: var(--dl-amber); }
+  .person-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--dl-text);
+  }
+  .person-email {
+    font-size: 12px;
+    color: var(--dl-text-soft);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .person-email.missing {
+    color: var(--dl-amber);
+    font-weight: 600;
+    font-style: italic;
+  }
+  .person-manager {
+    font-size: 12px;
+    color: var(--dl-text-faint);
+  }
+  .person-manager-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-right: 4px;
+    color: var(--dl-text-faint);
+  }
+  .person-count {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: var(--dl-green);
+    color: var(--dl-white);
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-weight: 700;
+  }
+  .person-count.no-email { background: var(--dl-amber); }
+  .training-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .training-table th {
+    padding: 8px 18px;
+    background: var(--dl-white);
+    color: var(--dl-text-faint);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: left;
+    border-bottom: 1px solid var(--dl-gray);
+  }
+  .training-table td {
+    padding: 10px 18px;
+    border-bottom: 1px solid #f0f0f0;
+    line-height: 1.4;
+    vertical-align: middle;
+  }
+  .training-table tr:last-child td { border-bottom: none; }
+  .training-name {
+    font-weight: 600;
+    color: var(--dl-text);
+  }
+  .training-id {
+    font-size: 10px;
+    color: var(--dl-text-faint);
+    font-family: monospace;
+  }
+  .days-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 40px;
+    text-align: center;
+  }
+  .days-badge.urgent { background: rgba(218, 41, 28, 0.15); color: var(--dl-red); }
+  .days-badge.warn { background: rgba(232, 163, 23, 0.18); color: #8a5500; }
+  .days-badge.safe { background: rgba(0, 163, 224, 0.15); color: #00689a; }
+  .type-tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--dl-gray-light);
+    color: var(--dl-text-soft);
+  }
+  .type-tag.req { background: rgba(134, 188, 37, 0.15); color: var(--dl-green-dark); }
+  .type-tag.opt { background: rgba(0, 163, 224, 0.15); color: #00689a; }
+
+  .table-footer {
+    padding: 14px 18px;
+    background: var(--dl-gray-light);
+    border-top: 1px solid var(--dl-gray);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--dl-text-faint);
+  }
+  .pagination { display: flex; gap: 6px; align-items: center; }
+  .pagination button {
+    background: var(--dl-white);
+    border: 1px solid var(--dl-gray);
+    color: var(--dl-text);
+    padding: 6px 12px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  .pagination button:hover:not(:disabled) { background: var(--dl-green); color: var(--dl-white); border-color: var(--dl-green); }
+  .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+  }
+  .modal-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: var(--dl-white);
+    border-radius: 8px;
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-top: 4px solid var(--dl-green);
+  }
+  .modal-header {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--dl-gray);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-header h2 {
+    font-size: 22px;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+  }
+  .modal-header h2 em { font-style: italic; color: var(--dl-green); font-weight: 700; }
+  .modal-close-x {
+    background: transparent;
+    border: none;
+    font-size: 22px;
+    color: var(--dl-text-faint);
+    cursor: pointer;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-close-x:hover { background: var(--dl-gray-light); color: var(--dl-text); }
+  .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 32px;
+  }
+  .email-preview-frame {
+    background: var(--dl-white);
+    border: 1px solid var(--dl-gray);
+    padding: 28px;
+    border-radius: 4px;
+  }
+  .modal-footer {
+    padding: 16px 32px;
+    border-top: 1px solid var(--dl-gray);
+    background: var(--dl-gray-light);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  /* Help */
+  .help-section {
+    margin-top: 50px;
+    padding-top: 32px;
+    border-top: 1px solid var(--dl-gray);
+  }
+  details {
+    border-bottom: 1px solid var(--dl-gray);
+    padding: 14px 0;
+  }
+  summary {
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 700;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: '+'; font-size: 22px; color: var(--dl-green); font-weight: 300; }
+  details[open] summary::after { content: '−'; }
+  details p {
+    padding-top: 10px;
+    font-size: 13px;
+    color: var(--dl-text-soft);
+    line-height: 1.7;
+  }
+
+  footer {
+    margin-top: 50px;
+    padding: 24px 0 0;
+    border-top: 1px solid var(--dl-gray);
+    font-size: 11px;
+    color: var(--dl-text-faint);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+  }
+  footer .tagline {
+    font-style: italic;
+    color: var(--dl-text-soft);
+    font-size: 13px;
+  }
+  footer .tagline b { color: var(--dl-green); font-weight: 700; }
+
+  .error-banner {
+    background: rgba(218, 41, 28, 0.1);
+    border-left: 4px solid var(--dl-red);
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: var(--dl-red);
+    display: none;
+  }
+  .error-banner.show { display: block; }
+
+  @media (max-width: 920px) {
+    .topnav { padding: 14px 22px; }
+    .wrapper { padding: 24px 22px 40px; }
+    .step-card { padding: 24px 22px; max-width: 100%; }
+    .step-card.next-peek, .step-card.future {
+      transform: translateX(calc(-50% + 30px)) translateY(20px) scale(0.92);
+    }
+    .step-title { font-size: 22px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .notify-primary { grid-template-columns: 1fr; }
+    .notify-steps { grid-template-columns: 1fr; }
+    .progress-summary { grid-template-columns: 1fr; }
+    .person-header { grid-template-columns: 1fr; gap: 6px; }
+    .step-indicator { grid-template-columns: 1fr 1fr; }
+    .step-ind:nth-child(2) { border-right: none; }
+    .step-ind:nth-child(1), .step-ind:nth-child(2) { border-bottom: 1px solid var(--dl-gray); }
+    .training-table { font-size: 11px; }
+    .training-table th, .training-table td { padding: 8px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="brand-bar"></div>
+
+<header class="topnav">
+  <div style="display:flex; align-items:center; flex-wrap:wrap;">
+    <div class="logo">Deloitte<span class="dot">.</span></div>
+    <span class="product-name">Compliance Agent</span>
+  </div>
+  <div class="topnav-meta">v 2.0 · <b>Runs in browser</b> · zero data leaves your device</div>
+</header>
+
+<div class="wrapper">
+
+<div class="intro">
+  <h1>Training compliance, <em>simplified</em>.</h1>
+  <p>Drop in your training reports and email rosters. The agent extracts every record, matches each person to an email address, and prepares a single bulk notification — ready for Outlook in three clicks.</p>
+</div>
+
+<!-- Step indicator -->
+<div class="step-indicator">
+  <div class="step-ind active" id="ind-1">
+    <div class="step-ind-num">1</div>
+    <div class="step-ind-label">Training reports</div>
+  </div>
+  <div class="step-ind" id="ind-2">
+    <div class="step-ind-num">2</div>
+    <div class="step-ind-label">Email rosters</div>
+  </div>
+  <div class="step-ind" id="ind-3">
+    <div class="step-ind-num">3</div>
+    <div class="step-ind-label">Run the agent</div>
+  </div>
+  <div class="step-ind" id="ind-4">
+    <div class="step-ind-num">4</div>
+    <div class="step-ind-label">Review &amp; notify</div>
+  </div>
+</div>
+
+<!-- ============= CAROUSEL ============= -->
+<div class="carousel-stage" id="carousel-stage">
+  <div class="carousel-track" id="carousel-track">
+
+    <!-- STEP 1 -->
+    <div class="step-card active" id="step-1">
+      <div class="step-num-tag">Step 01</div>
+      <h2 class="step-title">Drop in your <em>training reports</em>.</h2>
+      <p class="step-sub">These are the periodic reports issued by your Learning Management System listing employees with overdue or upcoming training requirements. Add as many as you need — the agent merges them.</p>
+      <div class="req-box">
+        <div class="req-box-title">What goes here</div>
+        <ul>
+          <li><b>Format:</b> PDF</li>
+          <li><b>Content:</b> LMS reports listing employees and their pending trainings — overdue, coming-due, weekly rollups, monthly compliance exports</li>
+          <li><b>How many:</b> One or more — they merge together</li>
+        </ul>
+      </div>
+      <div class="dropzone" id="pdf-drop">
+        <div class="dz-icon">+</div>
+        <div class="dz-prompt">Drop PDF files here or click to browse</div>
+        <div class="dz-hint">PDF · multiple files OK</div>
+      </div>
+      <input type="file" id="pdf-input" accept=".pdf" multiple hidden>
+      <div class="file-list" id="pdf-list"></div>
+      <button class="add-more-btn" id="add-pdf-btn">+ Add another PDF</button>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step-card future" id="step-2">
+      <div class="step-num-tag">Step 02</div>
+      <h2 class="step-title">Drop in your <em>email rosters</em>.</h2>
+      <p class="step-sub">These are the spreadsheets the agent will use to look up each employee's email address. Drop in any roster you have — staff lists, employee directories, contact exports — the agent figures out which columns hold names and emails.</p>
+      <div class="req-box">
+        <div class="req-box-title">What goes here</div>
+        <ul>
+          <li><b>Format:</b> CSV, XLSX, or XLS</li>
+          <li><b>Content:</b> Any file listing names alongside email addresses</li>
+          <li><b>Names:</b> Either "Last, First" or "First Last" works</li>
+          <li><b>How many:</b> One or more — agent searches across all of them</li>
+        </ul>
+      </div>
+      <div class="dropzone" id="roster-drop">
+        <div class="dz-icon">+</div>
+        <div class="dz-prompt">Drop CSV / Excel files here or click to browse</div>
+        <div class="dz-hint">CSV · XLSX · XLS · multiple files OK</div>
+      </div>
+      <input type="file" id="roster-input" accept=".csv,.xlsx,.xls" multiple hidden>
+      <div class="file-list" id="roster-list"></div>
+      <button class="add-more-btn" id="add-roster-btn">+ Add another roster</button>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step-card future" id="step-3">
+      <div class="step-num-tag">Step 03</div>
+      <h2 class="step-title">Hand off to <em>the agent</em>.</h2>
+      <p class="step-sub">The agent reads every PDF, builds an email lookup from your rosters, matches each person, and assembles the report. This typically takes 10–30 seconds depending on file size.</p>
+      <div class="error-banner" id="error-banner"></div>
+      <div class="run-zone">
+        <div class="run-zone-title">Ready when <em>you are</em>.</div>
+        <div class="run-zone-sub">extracts records · matches emails · prepares notifications</div>
+        <button class="btn large" id="run-btn">Run agent →</button>
+      </div>
+      <div class="progress-section" id="progress-section">
+        <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+        <div class="progress-status" id="progress-status"><span class="spinner"></span>Initializing…</div>
+        <div class="progress-log" id="progress-log"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Carousel control row (OUTSIDE the cards) -->
+<div class="carousel-controls" id="carousel-controls">
+  <div class="left-side">
+    <button class="btn secondary" id="back-btn" style="display:none;">← Back</button>
+  </div>
+  <div class="right-side">
+    <button class="btn outline-green" id="cancel-btn">Reset</button>
+    <button class="btn" id="continue-btn" disabled>Continue to Step 02 →</button>
+  </div>
+</div>
+
+<!-- ============= STEP 4 ============= -->
+<section class="results-section" id="results-section">
+
+  <!-- Compact summary of what was completed -->
+  <div class="progress-summary show" id="progress-summary">
+    <div class="ps-card">
+      <div class="ps-num"><span></span></div>
+      <div class="ps-info">
+        <div class="ps-info-label">Step 01 · Training reports</div>
+        <div class="ps-info-value" id="ps-1">—</div>
+      </div>
+    </div>
+    <div class="ps-card">
+      <div class="ps-num"><span></span></div>
+      <div class="ps-info">
+        <div class="ps-info-label">Step 02 · Email rosters</div>
+        <div class="ps-info-value" id="ps-2">—</div>
+      </div>
+    </div>
+    <div class="ps-card">
+      <div class="ps-num"><span></span></div>
+      <div class="ps-info">
+        <div class="ps-info-label">Step 03 · Agent run</div>
+        <div class="ps-info-value" id="ps-3">—</div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="step-title" style="margin-bottom:8px;">Here is what the agent <em>extracted</em>.</h2>
+  <p class="step-sub" style="margin-bottom:24px;">Review the records below. When ready, follow the four-step flow on the right to send your bulk notification.</p>
+
+  <div class="stats-grid">
+    <div class="stat">
+      <div class="stat-num" id="s-records">—</div>
+      <div class="stat-label">Total records</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="s-people">—</div>
+      <div class="stat-label">Unique people</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num green" id="s-matched">—</div>
+      <div class="stat-label">Email matched</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="s-missing">—</div>
+      <div class="stat-label">Missing email</div>
+    </div>
+  </div>
+
+  <!-- Primary actions: Open Outlook + Preview -->
+  <div class="notify-primary">
+    <div>
+      <div class="notify-primary-title">Send <em>one email</em> to all matched recipients.</div>
+      <div class="notify-primary-sub">Start by opening a fresh Outlook draft and reviewing the email preview. Then complete the three steps below.</div>
+    </div>
+    <div class="notify-primary-actions">
+      <button class="btn large" id="open-outlook-btn">📧 Open new Outlook email</button>
+      <button class="btn secondary" id="preview-email-btn">👁 Preview email</button>
+    </div>
+  </div>
+
+  <!-- 3-step copy/paste flow -->
+  <div class="notify-steps-title">Then follow these <em style="color:var(--dl-green);font-weight:700;font-style:italic;">three steps</em> in order:</div>
+  <p class="notify-steps-sub">Click each button. Switch to Outlook. Paste. Done.</p>
+  <div class="notify-steps">
+    <div class="notify-step">
+      <div class="notify-step-num">STEP 01</div>
+      <div class="notify-step-label">Email body</div>
+      <div class="notify-step-hint">Copies the formatted table and message. In Outlook, click into the message body and paste with <b>Ctrl+V</b> (or Cmd+V on Mac).</div>
+      <button class="notify-action-btn" id="copy-body-btn">📋 Copy email body</button>
+    </div>
+    <div class="notify-step">
+      <div class="notify-step-num">STEP 02</div>
+      <div class="notify-step-label">Recipients</div>
+      <div class="notify-step-hint">Copies all matched email addresses (semicolon-separated). Paste into Outlook's <b>To</b>, <b>Cc</b>, or <b>Bcc</b> field — your choice.</div>
+      <button class="notify-action-btn" id="copy-recipients-btn">📋 Copy recipients</button>
+    </div>
+    <div class="notify-step">
+      <div class="notify-step-num">STEP 03</div>
+      <div class="notify-step-label">Attachment</div>
+      <div class="notify-step-hint">Downloads the full Excel report. Once it lands in Downloads, drag it directly onto your Outlook window to attach.</div>
+      <button class="notify-action-btn" id="dl-xlsx-btn">⬇ Download Excel</button>
+    </div>
+  </div>
+
+  <h3 style="font-size:18px; font-weight:700; margin-bottom:10px;">Records by person</h3>
+  <div class="filter-bar">
+    <input type="text" id="search-input" placeholder="Search by name, training, manager, or email…">
+    <button class="filter-pill active" data-filter="all">All</button>
+    <button class="filter-pill" data-filter="overdue">Overdue</button>
+    <button class="filter-pill" data-filter="duesoon">Due ≤ 7 days</button>
+    <button class="filter-pill" data-filter="missing">Missing email</button>
+    <button class="filter-pill" data-filter="matched">With email</button>
+  </div>
+
+  <div class="grouped-list" id="grouped-list"></div>
+  <div class="table-footer">
+    <span id="table-count">Showing 0 records</span>
+    <div class="pagination">
+      <button id="pg-prev">‹ Prev</button>
+      <span id="pg-info" style="font-weight:600;">Page 1 / 1</span>
+      <button id="pg-next">Next ›</button>
+    </div>
+  </div>
+
+</section>
+
+<!-- Email preview modal -->
+<div class="modal-overlay" id="preview-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Email <em>preview</em></h2>
+      <button class="modal-close-x" id="preview-modal-close-x">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px; color:var(--dl-text-faint); margin-bottom:14px;">This is exactly what will paste into Outlook when you click "Copy email body".</p>
+      <div class="email-preview-frame" id="email-preview-frame"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" id="preview-modal-close-btn">Close</button>
+      <button class="btn" id="preview-copy-btn">📋 Copy email body</button>
+    </div>
+  </div>
+</div>
+
+<div class="help-section">
+  <details>
+    <summary>How do I get the email into Outlook?</summary>
+    <p>Click <b>Open new Outlook email</b> first to start a fresh draft. Then click the three step buttons in order: <b>(1)</b> Copy email body — paste into the message with Ctrl+V (full table appears formatted). <b>(2)</b> Copy recipients — paste into the To, Cc, or Bcc field. <b>(3)</b> Download Excel — drag the file onto your Outlook window to attach. Three buttons. Three pastes. Done.</p>
+  </details>
+  <details>
+    <summary>Does pasting really preserve the formatting?</summary>
+    <p>Yes, in modern Chrome, Edge, and Safari. The "Copy email body" button copies the email as both rich HTML and plain text on your clipboard. When pasted into Outlook (a rich-text editor), it picks up the HTML version and renders the formatted table with colors and structure intact. If you're on an older browser and it doesn't work, click "Preview email", then select-all and copy from there as a fallback.</p>
+  </details>
+  <details>
+    <summary>What's in the bulk email?</summary>
+    <p>A grouped table organized by person — each person appears once with their full name, email, and manager, followed by all their pending trainings underneath (training name, required date, days remaining, type). No more reading the same name 17 times. The Excel attachment contains the full data with several views (summary, by-manager, by-source, missing-email).</p>
+  </details>
+  <details>
+    <summary>Why are some emails marked "missing email"?</summary>
+    <p>The agent looked up each person from your PDFs in the rosters you provided. If they're not there, the row is preserved but flagged. They won't be included in the bulk recipient list. To resolve, add another roster spreadsheet that contains those people.</p>
+  </details>
+  <details>
+    <summary>Is my data safe?</summary>
+    <p>Yes. This is a single HTML file that runs entirely in your browser. No data is uploaded anywhere. The only network requests are to load the open-source PDF and Excel libraries from a public CDN at page load. You can verify this in browser developer tools.</p>
+  </details>
+</div>
+
+<footer>
+  <div class="tagline">The agent extracts. You review. <b>Together makes progress.</b></div>
+  <div>
+    <div>Single-file tool</div>
+    <div>Save as .html · works offline</div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const state = {
+  pdfFiles: [],
+  rosterFiles: [],
+  results: null,
+  currentStep: 1,
+  filteredGroups: [],
+  currentPage: 1,
+  pageSize: 8,  // 8 person-groups per page
+  activeFilter: 'all',
+  searchQuery: '',
+};
+
+// =============== Carousel navigation ===============
+function setCarouselStep(n) {
+  state.currentStep = n;
+
+  // Update step indicator pills
+  for (let i = 1; i <= 4; i++) {
+    const ind = document.getElementById(`ind-${i}`);
+    ind.classList.remove('active', 'done');
+    if (i < n) ind.classList.add('done');
+    else if (i === n) ind.classList.add('active');
+  }
+
+  // Update card positions
+  for (let i = 1; i <= 3; i++) {
+    const card = document.getElementById(`step-${i}`);
+    card.classList.remove('active', 'next-peek', 'future', 'gone-left');
+    if (i < n) card.classList.add('gone-left');
+    else if (i === n) card.classList.add('active');
+    else if (i === n + 1) card.classList.add('next-peek');
+    else card.classList.add('future');
+  }
+
+  // Update carousel controls
+  const backBtn = document.getElementById('back-btn');
+  const continueBtn = document.getElementById('continue-btn');
+  const cancelBtn = document.getElementById('cancel-btn');
+  const controls = document.getElementById('carousel-controls');
+
+  // If we're on step 4, hide the carousel and show results section
+  if (n === 4) {
+    document.getElementById('carousel-stage').style.display = 'none';
+    controls.style.display = 'none';
+    document.getElementById('results-section').classList.add('show');
+    return;
+  } else {
+    document.getElementById('carousel-stage').style.display = 'block';
+    controls.style.display = 'flex';
+    document.getElementById('results-section').classList.remove('show');
+  }
+
+  backBtn.style.display = n > 1 ? 'inline-block' : 'none';
+
+  if (n === 1) {
+    continueBtn.textContent = 'Continue to Step 02 →';
+    continueBtn.disabled = state.pdfFiles.length === 0;
+    continueBtn.style.display = 'inline-block';
+  } else if (n === 2) {
+    continueBtn.textContent = 'Continue to Step 03 →';
+    continueBtn.disabled = state.rosterFiles.length === 0;
+    continueBtn.style.display = 'inline-block';
+  } else if (n === 3) {
+    continueBtn.style.display = 'none';
+  }
+}
+
+document.getElementById('continue-btn').addEventListener('click', () => {
+  if (state.currentStep < 3) setCarouselStep(state.currentStep + 1);
+});
+document.getElementById('back-btn').addEventListener('click', () => {
+  if (state.currentStep > 1) setCarouselStep(state.currentStep - 1);
+});
+document.getElementById('cancel-btn').addEventListener('click', () => {
+  if (confirm('Reset everything and start over? Your uploaded files will be cleared.')) {
+    state.pdfFiles = [];
+    state.rosterFiles = [];
+    state.results = null;
+    renderFileList('pdfFiles');
+    renderFileList('rosterFiles');
+    document.getElementById('progress-section').classList.remove('show');
+    document.getElementById('progress-log').innerHTML = '';
+    document.getElementById('progress-bar').style.width = '0%';
+    document.getElementById('error-banner').classList.remove('show');
+    setCarouselStep(1);
+  }
+});
+
+// =============== File handling ===============
+function setupDrop(dropId, inputId, addBtnId, listKey) {
+  const drop = document.getElementById(dropId);
+  const input = document.getElementById(inputId);
+  const addBtn = document.getElementById(addBtnId);
+  drop.addEventListener('click', () => input.click());
+  addBtn.addEventListener('click', () => input.click());
+  input.addEventListener('change', e => { addFiles(listKey, Array.from(e.target.files)); input.value = ''; });
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragging'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('dragging'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault();
+    drop.classList.remove('dragging');
+    addFiles(listKey, Array.from(e.dataTransfer.files));
+  });
+}
+function addFiles(listKey, files) {
+  const validExts = listKey === 'pdfFiles' ? ['.pdf'] : ['.csv', '.xlsx', '.xls'];
+  for (const f of files) {
+    const lname = f.name.toLowerCase();
+    if (!validExts.some(ext => lname.endsWith(ext))) continue;
+    if (state[listKey].some(e => e.name === f.name && e.size === f.size)) continue;
+    state[listKey].push(f);
+  }
+  renderFileList(listKey);
+  updateContinueState();
+}
+function removeFile(listKey, idx) {
+  state[listKey].splice(idx, 1);
+  renderFileList(listKey);
+  updateContinueState();
+}
+function renderFileList(listKey) {
+  const containerId = listKey === 'pdfFiles' ? 'pdf-list' : 'roster-list';
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  state[listKey].forEach((f, idx) => {
+    const ext = f.name.split('.').pop().toUpperCase();
+    const sizeKB = (f.size / 1024).toFixed(0);
+    const row = document.createElement('div');
+    row.className = 'file-row';
+    row.innerHTML = `<span class="ftype">${ext}</span><span class="fname"></span><span class="fsize">${sizeKB} KB</span><button class="fclear">Remove</button>`;
+    row.querySelector('.fname').textContent = f.name;
+    row.querySelector('.fclear').addEventListener('click', () => removeFile(listKey, idx));
+    container.appendChild(row);
+  });
+}
+function updateContinueState() {
+  const continueBtn = document.getElementById('continue-btn');
+  if (state.currentStep === 1) continueBtn.disabled = state.pdfFiles.length === 0;
+  else if (state.currentStep === 2) continueBtn.disabled = state.rosterFiles.length === 0;
+}
+setupDrop('pdf-drop', 'pdf-input', 'add-pdf-btn', 'pdfFiles');
+setupDrop('roster-drop', 'roster-input', 'add-roster-btn', 'rosterFiles');
+
+// =============== Progress ===============
+function setProgress(pct, status) {
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-status').innerHTML = pct < 100 ? `<span class="spinner"></span>${status}` : status;
+}
+function logProgress(msg) {
+  const log = document.getElementById('progress-log');
+  const div = document.createElement('div');
+  div.textContent = msg;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+function showError(msg) {
+  const eb = document.getElementById('error-banner');
+  eb.textContent = msg;
+  eb.classList.add('show');
+}
+
+// =============== PDF parser ===============
+const TZ_PREFIXES = ['America','Asia','Europe','Canada','Pacific','Atlantic','Africa','Australia','Indian','Etc','UTC'];
+const DATE_RE = /\d{1,2}\/[A-Za-z]{3}\/\d{4}/;
+const DATE_RE_G = /\d{1,2}\/[A-Za-z]{3}\/\d{4}/g;
+function isTzToken(tok) { return TZ_PREFIXES.some(p => tok.startsWith(p)) && tok.includes('/'); }
+
+function splitGluedToken(word) {
+  const text = word.text;
+  const m = text.match(/^(.+?-)(OPT|REQ)\b(.*)$/);
+  if (m) { const pieces = [m[1], m[2]]; if (m[3]) pieces.push(m[3]); return splitAtPieces(word, pieces); }
+  const pieces = []; let current = '';
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === ')' && i + 1 < text.length) {
+      current += ch;
+      const nextCh = text[i+1];
+      if (/[A-Za-z0-9(]/.test(nextCh)) { pieces.push(current); current = ''; }
+    } else if (ch === '(' && i > 0) {
+      const prevCh = text[i-1];
+      if (/[A-Za-z0-9)]/.test(prevCh)) { if (current) pieces.push(current); current = ch; }
+      else current += ch;
+    } else if (ch === '-' && i > 0 && i + 1 < text.length) {
+      const prevCh = text[i-1]; const nextCh = text[i+1];
+      if ((/\d|\./.test(prevCh)) && /[A-Z]/.test(nextCh)) {
+        if (current.endsWith(prevCh)) { pieces.push(current); current = ''; i++; continue; }
+      }
+      current += ch;
+    } else current += ch;
+  }
+  if (current) pieces.push(current);
+  if (pieces.length <= 1) return [word];
+  return splitAtPieces(word, pieces);
+}
+function splitAtPieces(word, pieces) {
+  pieces = pieces.filter(p => p);
+  if (pieces.length <= 1) return [word];
+  const totalChars = Math.max(word.text.length, 1);
+  const width = word.x1 - word.x0;
+  const charW = width / totalChars;
+  const out = []; let pos = 0;
+  for (const piece of pieces) {
+    const x0 = word.x0 + pos * charW;
+    const x1 = x0 + piece.length * charW;
+    out.push({ text: piece, x0, x1, top: word.top, bottom: word.bottom || word.top });
+    pos += piece.length;
+  }
+  return out;
+}
+async function getPageWords(page) {
+  const tc = await page.getTextContent();
+  const vp = page.getViewport({ scale: 1 });
+  const pageHeight = vp.height;
+  const words = [];
+  for (const item of tc.items) {
+    const text = item.str.trim();
+    if (!text) continue;
+    const tx = item.transform[4]; const ty = item.transform[5];
+    const fh = Math.abs(item.transform[3]) || item.height || 12;
+    const top = pageHeight - ty - fh;
+    words.push({ text, x0: tx, x1: tx + (item.width || text.length * 5), top, bottom: top + fh });
+  }
+  return words;
+}
+function groupRowsByY(words, yTol = 8) {
+  if (!words.length) return [];
+  const split = [];
+  for (const w of words) for (const p of splitGluedToken(w)) split.push(p);
+  split.sort((a, b) => a.top - b.top || a.x0 - b.x0);
+  const rows = [];
+  let current = []; let cTop = null;
+  for (const w of split) {
+    if (cTop === null || Math.abs(w.top - cTop) <= yTol) {
+      current.push(w);
+      cTop = cTop === null ? w.top : Math.min(cTop, w.top);
+    } else {
+      current.sort((a, b) => a.x0 - b.x0);
+      rows.push({ top: cTop, words: current });
+      current = [w]; cTop = w.top;
+    }
+  }
+  if (current.length) { current.sort((a, b) => a.x0 - b.x0); rows.push({ top: cTop, words: current }); }
+  return rows;
+}
+function lineText(row) { return row.words.map(w => w.text).join(' '); }
+function isNoise(text) {
+  const t = text.trim(); if (!t) return true;
+  const tl = t.toLowerCase();
+  if (t.startsWith('https://') || tl.includes('plateau.com')) return true;
+  if (t.includes('getBackgroundReport')) return true;
+  if (t.includes('User Learning Needs')) return true;
+  if (tl.includes('document contains confidential')) return true;
+  if (tl.includes('personally accountable')) return true;
+  if (/^\d{1,2}\/\d{1,2}\/\d{2,4},?\s+\d/.test(t)) return true;
+  if (t.includes('Coordinated Universal Time')) return true;
+  if (/^Page\s+\d+\s+of\s+\d+$/.test(t)) return true;
+  if (t === 'Item' || t === 'User' || t === 'Manager') return true;
+  if (t.startsWith('Item Title')) return true;
+  if (t.includes('Type Date Date Remaining')) return true;
+  if (/^(Type|Date|Remaining)(\s+(Type|Date|Remaining))*$/.test(t)) return true;
+  return false;
+}
+function splitGluedDates(token) { return token.match(DATE_RE_G) || []; }
+
+async function parsePDF(file, sourceLabel, onProgress) {
+  const ab = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+  const np = pdf.numPages;
+  const allRows = [];
+  for (let p = 1; p <= np; p++) {
+    if (onProgress && p % 5 === 0) onProgress(p, np);
+    const page = await pdf.getPage(p);
+    const words = await getPageWords(page);
+    const rows = groupRowsByY(words, 8);
+    for (const r of rows) { r.page = p; allRows.push(r); }
+  }
+  for (const r of allRows) {
+    const text = lineText(r);
+    if (isNoise(text)) { r.type = 'noise'; continue; }
+    let m = text.match(/Manager ID\s*:\s*(\d+)/);
+    if (m) {
+      const m2 = text.match(/Manager Name\s*:\s*(.+)/);
+      r.type = m2 ? 'manager_full' : 'manager_id';
+      r.manager_id = m[1]; r.manager_name = m2 ? m2[1].trim() : '';
+      continue;
+    }
+    m = text.match(/Manager Name\s*:\s*(.+)/);
+    if (m) { r.type = 'manager_name'; r.manager_name = m[1].trim(); continue; }
+    m = text.match(/User ID\s*:\s*(\d+)/);
+    if (m) {
+      const m2 = text.match(/User Name\s*:\s*(.+)/);
+      r.type = m2 ? 'user_full' : 'user_id';
+      r.user_id = m[1]; r.user_name = m2 ? m2[1].trim() : '';
+      continue;
+    }
+    m = text.match(/^COURSE\s+(\d+)/);
+    if (m) { r.type = 'course'; r.course_id = m[1]; continue; }
+    r.type = 'continuation';
+  }
+  const records = [];
+  let mgrId = '', mgrName = '', usrId = '', usrName = '';
+  let i = 0;
+  while (i < allRows.length) {
+    const r = allRows[i];
+    const t = r.type || 'noise';
+    if (t === 'noise') { i++; continue; }
+    if (t === 'manager_full') { mgrId = r.manager_id; mgrName = r.manager_name; usrId = ''; usrName = ''; i++; continue; }
+    if (t === 'manager_id') {
+      mgrId = r.manager_id; usrId = ''; usrName = '';
+      let j = i + 1;
+      while (j < allRows.length && allRows[j].type === 'noise') j++;
+      if (j < allRows.length && allRows[j].type === 'manager_name') { mgrName = allRows[j].manager_name; i = j + 1; continue; }
+      i++; continue;
+    }
+    if (t === 'manager_name') { mgrName = r.manager_name; i++; continue; }
+    if (t === 'user_full') { usrId = r.user_id; usrName = r.user_name; i++; continue; }
+    if (t === 'user_id') {
+      usrId = r.user_id;
+      let j = i + 1;
+      while (j < allRows.length && allRows[j].type === 'noise') j++;
+      if (j < allRows.length && allRows[j].type === 'continuation') {
+        const nt = lineText(allRows[j]);
+        const m = nt.match(/^(\d+)\s+(.+)/);
+        if (m) { usrId = m[1]; usrName = m[2].trim(); i = j + 1; continue; }
+      }
+      i++; continue;
+    }
+    if (t === 'course') {
+      const courseRow = r; const cid = r.course_id;
+      const cont = [];
+      let j = i + 1;
+      while (j < allRows.length) {
+        const rt = allRows[j].type || 'noise';
+        if (rt === 'noise') { j++; continue; }
+        if (rt !== 'continuation') break;
+        cont.push(allRows[j]); j++;
+      }
+      const rec = extractCourse(courseRow, cont, cid);
+      rec.manager_id = mgrId; rec.manager_name = mgrName;
+      rec.user_id = usrId; rec.user_name = usrName;
+      rec.source = sourceLabel;
+      records.push(rec);
+      i = j; continue;
+    }
+    i++;
+  }
+  return records;
+}
+function extractCourse(courseRow, continuationRows, courseId) {
+  const cw = courseRow.words; const cp = courseRow.page;
+  let assignTypeWord = null, assignTypeShort = '';
+  for (const w of cw) {
+    if (w.text === 'REQ' || w.text === 'OPT') { assignTypeShort = w.text; assignTypeWord = w; break; }
+  }
+  const assignTypeFull = assignTypeShort === 'REQ' ? 'REQ (Compliance or Qualification Training)'
+                       : assignTypeShort === 'OPT' ? 'OPT (Additional Required Training)' : '';
+  let titleXLo = null;
+  const sortedByX = [...cw].sort((a, b) => a.x0 - b.x0);
+  for (const w of sortedByX) {
+    const tok = w.text;
+    if (['COURSE','(Rev','-','–'].includes(tok)) continue;
+    if (tok === courseId) continue;
+    if (/^\d+(\.\d+)?$/.test(tok)) continue;
+    if (DATE_RE.test(tok)) continue;
+    if (tok === 'AM' || tok === 'PM') continue;
+    if (/^\d{1,2}:\d{2}/.test(tok)) continue;
+    if (isTzToken(tok)) continue;
+    titleXLo = w.x0; break;
+  }
+  if (titleXLo === null) titleXLo = 170;
+  let rightAnchorX = Infinity;
+  if (assignTypeWord) rightAnchorX = Math.min(rightAnchorX, assignTypeWord.x0);
+  for (const w of cw) {
+    if (DATE_RE.test(w.text) && w.x0 > titleXLo + 5) rightAnchorX = Math.min(rightAnchorX, w.x0);
+  }
+  if (rightAnchorX === Infinity) rightAnchorX = 280;
+  const datesFound = [];
+  for (const w of cw) {
+    if (DATE_RE.test(w.text) && w.x0 > titleXLo) datesFound.push(...splitGluedDates(w.text));
+  }
+  const assignmentDate = datesFound[0] || '';
+  const requiredDate = datesFound[1] || '';
+  let daysRemaining = '';
+  const sortedRight = [...cw].sort((a, b) => b.x0 - a.x0);
+  for (const w of sortedRight) {
+    if (/^-?\d+$/.test(w.text) && w.text !== courseId && w.x0 > 450) { daysRemaining = w.text; break; }
+  }
+  const titleParts = [];
+  const isTitleWord = (tok) => {
+    if (!tok || !tok.trim()) return false;
+    if (DATE_RE.test(tok)) return false;
+    if (/^\d{1,2}:\d{2}/.test(tok)) return false;
+    if (tok === 'AM' || tok === 'PM') return false;
+    if (isTzToken(tok)) return false;
+    if (tok === 'REQ' || tok === 'OPT') return false;
+    if (tok === 'COURSE') return false;
+    if (['(Rev','(',')','-','–'].includes(tok)) return false;
+    if (tok.toLowerCase() === 'rev') return false;
+    return true;
+  };
+  for (const w of cw) {
+    if (!isTitleWord(w.text)) continue;
+    if (/^\d+(\.\d+)?$/.test(w.text) && w.x0 < titleXLo) continue;
+    if (titleXLo - 2 <= w.x0 && w.x0 < rightAnchorX) {
+      titleParts.push({ page: cp, top: w.top, x0: w.x0, text: w.text });
+    }
+  }
+  for (const cont of continuationRows) {
+    const contPage = cont.page; const contWords = cont.words;
+    let contRightAnchor = Infinity;
+    for (const w of contWords) {
+      if (w.x0 <= titleXLo) continue;
+      const tok = w.text;
+      if (tok === 'REQ' || tok === 'OPT') contRightAnchor = Math.min(contRightAnchor, w.x0);
+      if (DATE_RE.test(tok)) contRightAnchor = Math.min(contRightAnchor, w.x0);
+      if (tok === '(Compliance' || tok === '(Additional') contRightAnchor = Math.min(contRightAnchor, w.x0);
+    }
+    if (contRightAnchor === Infinity) contRightAnchor = rightAnchorX;
+    const detailWords = new Set(['Compliance','Additional','or','Qualification','Required','Training)','Training']);
+    for (const w of contWords) {
+      const tok = w.text;
+      if (!isTitleWord(tok)) continue;
+      const inTitleCol = titleXLo - 2 <= w.x0 && w.x0 < contRightAnchor;
+      const inLeftCol = w.x0 < titleXLo - 2;
+      if (inTitleCol) {
+        if (detailWords.has(tok) && (contRightAnchor - w.x0) < 5) continue;
+        titleParts.push({ page: contPage, top: w.top, x0: w.x0, text: tok });
+      } else if (inLeftCol) {
+        if (/^\d+(\.\d+)?$/.test(tok)) continue;
+        if (/^[A-Za-z][A-Za-z-]*$/.test(tok) || /^[A-Z][A-Za-z\-_]+:?$/.test(tok)) {
+          const monthRev = ['rev','jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec','am','pm'];
+          if (!monthRev.includes(tok.toLowerCase())) {
+            titleParts.push({ page: contPage, top: w.top, x0: w.x0, text: tok });
+          }
+        }
+      }
+    }
+  }
+  titleParts.sort((a, b) => a.page - b.page || a.top - b.top || a.x0 - b.x0);
+  const filtered = titleParts.filter(p => !['(Compliance','(Additional'].includes(p.text));
+  let title = filtered.map(p => p.text).join(' ');
+  title = title.replace(/\s+/g, ' ').trim();
+  title = title.replace(/^[\s)\-,;:(]+/, '').replace(/[\s\-,;:(]+$/, '');
+  title = title.replace(/^\(\s*/, '');
+  const open = (title.match(/\(/g) || []).length;
+  const close = (title.match(/\)/g) || []).length;
+  if (open > close) title += ')'.repeat(open - close);
+  return { course_id: courseId, course_title: title, assignment_type: assignTypeFull, assignment_date: assignmentDate, required_date: requiredDate, days_remaining: daysRemaining };
+}
+
+// =============== Roster parser ===============
+async function parseRoster(file) {
+  const ext = file.name.toLowerCase().split('.').pop();
+  const ab = await file.arrayBuffer();
+  let allRows = [];
+  if (ext === 'csv') {
+    const text = new TextDecoder().decode(ab);
+    const r = Papa.parse(text, { header: false, skipEmptyLines: true });
+    allRows = r.data;
+  } else {
+    const wb = XLSX.read(ab, { type: 'array' });
+    for (const sn of wb.SheetNames) {
+      const sheet = wb.Sheets[sn];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      allRows = allRows.concat(rows);
+    }
+  }
+  if (!allRows.length) return [];
+  let headerIdx = -1; let nameCol = -1, emailCol = -1;
+  for (let r = 0; r < Math.min(5, allRows.length); r++) {
+    const row = allRows[r];
+    for (let c = 0; c < row.length; c++) {
+      const cell = String(row[c] || '').toLowerCase().trim();
+      if (cell.includes('email') || cell.includes('e-mail') || cell.includes('mail id')) {
+        if (emailCol === -1) emailCol = c;
+      }
+      if (cell === 'name' || cell.includes('user name') || cell === 'user' ||
+          cell === 'employee' || cell === 'employee name' || cell.includes('full name')) {
+        if (nameCol === -1) nameCol = c;
+      }
+    }
+    if (nameCol !== -1 && emailCol !== -1) { headerIdx = r; break; }
+  }
+  if (nameCol === -1 || emailCol === -1) {
+    const cols = Math.max(...allRows.slice(0, 20).map(r => r.length));
+    const colHasEmail = new Array(cols).fill(0);
+    const colHasName = new Array(cols).fill(0);
+    for (const row of allRows.slice(0, 100)) {
+      for (let c = 0; c < row.length; c++) {
+        const v = String(row[c] || '').trim();
+        if (/@.+\./.test(v)) colHasEmail[c]++;
+        else if ((/^[A-Za-z][\w\s,.\-']{2,}$/.test(v) && v.includes(' ')) || v.includes(',')) colHasName[c]++;
+      }
+    }
+    if (emailCol === -1) emailCol = colHasEmail.indexOf(Math.max(...colHasEmail));
+    if (nameCol === -1) {
+      const cands = colHasName.map((v, i) => ({ v, i })).filter(x => x.i !== emailCol);
+      cands.sort((a, b) => b.v - a.v);
+      if (cands.length && cands[0].v > 0) nameCol = cands[0].i;
+    }
+    headerIdx = 0;
+  }
+  if (nameCol === -1 || emailCol === -1) return [];
+  const start = headerIdx + 1;
+  const out = [];
+  for (let r = start; r < allRows.length; r++) {
+    const row = allRows[r];
+    const name = String(row[nameCol] || '').trim();
+    const email = String(row[emailCol] || '').trim();
+    if (name && email && /@/.test(email)) out.push({ name, email });
+  }
+  return out;
+}
+
+// =============== Email matching ===============
+function normalizeName(n) { return !n ? '' : String(n).toLowerCase().replace(/\s+/g, ' ').trim(); }
+function nameVariants(name) {
+  if (!name) return [];
+  let n = normalizeName(name).replace(/[.']/g, '').replace(/\s*,\s*/g, ', ');
+  const v = new Set(); v.add(n);
+  let allToks;
+  if (n.includes(',')) {
+    const parts = n.split(',', 2).map(p => p.trim());
+    const last = parts[0], first = parts[1] || '';
+    v.add(`${first} ${last}`);
+    allToks = (last + ' ' + first).split(/\s+/).filter(Boolean);
+  } else {
+    const toks = n.split(/\s+/).filter(Boolean);
+    if (toks.length >= 2) {
+      v.add(`${toks[toks.length - 1]}, ${toks.slice(0, -1).join(' ')}`);
+      allToks = toks;
+    } else allToks = toks;
+  }
+  if (allToks && allToks.length) v.add('TOKSET::' + allToks.slice().sort().join(' '));
+  return Array.from(v);
+}
+function buildEmailLookup(records) {
+  const lk = new Map();
+  for (const r of records) for (const v of nameVariants(r.name)) if (v && !lk.has(v)) lk.set(v, r.email);
+  return lk;
+}
+function findEmailFuzzy(userName, lookup) {
+  if (!userName.includes(',')) return null;
+  const parts = userName.split(',', 2).map(p => p.trim().toLowerCase());
+  const last = parts[0].replace(/\./g, '').trim();
+  const fts = (parts[1] || '').split(/\s+/).filter(Boolean);
+  if (!last || !fts.length) return null;
+  const ft = fts[0];
+  for (const [k, v] of lookup) {
+    if (k.startsWith('TOKSET::')) continue;
+    const kt = new Set(k.match(/\w+/g) || []);
+    if (kt.has(last) && kt.has(ft)) return v;
+  }
+  return null;
+}
+function findEmail(userName, lookup) {
+  if (!userName) return null;
+  for (const v of nameVariants(userName)) if (lookup.has(v)) return lookup.get(v);
+  return findEmailFuzzy(userName, lookup);
+}
+function splitUserName(name) {
+  if (name.includes(',')) {
+    const p = name.split(',', 2);
+    return { first: p[1].trim(), last: p[0].trim() };
+  }
+  return { first: name.trim(), last: '' };
+}
+function safeInt(v) { const n = parseInt(v, 10); return isNaN(n) ? null : n; }
+
+// =============== Excel building ===============
+function buildExcel(allRecords, sourceGroups) {
+  const wb = XLSX.utils.book_new();
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' });
+  const HEADERS = ['FIRST NAME','LAST NAME','TRAINING NAME','TRAINING ID','REQUIRED DATE','DAYS REMAINING','ASSIGNMENT TYPE','ASSIGNMENT DATE','EMAIL','STATUS','MANAGER','SOURCE'];
+  function rowsFromRecs(records) {
+    return records.map(r => {
+      const { first, last } = splitUserName(r.user_name || '');
+      const days = safeInt(r.days_remaining);
+      const email = r.email || '';
+      const status = email === 'missing email' ? 'Missing Email' : 'Email Found';
+      return [first, last, r.course_title || '', r.course_id || '', r.required_date || '', days !== null ? days : '', r.assignment_type || '', r.assignment_date || '', email, status, r.manager_name || '', r.source || ''];
+    });
+  }
+  function makeSheet(title, records) {
+    const data = [];
+    data.push([title, ...Array(HEADERS.length - 1).fill('')]);
+    data.push(HEADERS);
+    for (const row of rowsFromRecs(records)) data.push(row);
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: HEADERS.length - 1 } }];
+    ws['!cols'] = [{wch:18},{wch:22},{wch:50},{wch:14},{wch:16},{wch:14},{wch:38},{wch:18},{wch:32},{wch:14},{wch:26},{wch:18}];
+    return ws;
+  }
+  function makeByMgr(records) {
+    const groups = new Map();
+    for (const r of records) {
+      const m = r.manager_name || '(no manager)';
+      if (!groups.has(m)) groups.set(m, []);
+      groups.get(m).push(r);
+    }
+    const data = [];
+    data.push([`Records Grouped by Manager - ${today}`, ...Array(HEADERS.length - 1).fill('')]);
+    data.push(HEADERS);
+    const merges = [{ s: { r: 0, c: 0 }, e: { r: 0, c: HEADERS.length - 1 } }];
+    for (const mgr of Array.from(groups.keys()).sort()) {
+      const rows = groups.get(mgr);
+      const sr = data.length;
+      data.push([`  Manager: ${mgr}  (${rows.length} records)`, ...Array(HEADERS.length - 1).fill('')]);
+      merges.push({ s: { r: sr, c: 0 }, e: { r: sr, c: HEADERS.length - 1 } });
+      for (const row of rowsFromRecs(rows)) data.push(row);
+    }
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!merges'] = merges;
+    ws['!cols'] = [{wch:18},{wch:22},{wch:50},{wch:14},{wch:16},{wch:14},{wch:38},{wch:18},{wch:32},{wch:14},{wch:26},{wch:18}];
+    return ws;
+  }
+  function makeSummary(allRecords, sourceGroups) {
+    const data = [];
+    data.push(['Training Compliance — Summary', '', '', '']);
+    data.push([`Generated: ${today}`, '', '', '']);
+    data.push(['', '', '', '']);
+    const uu = new Set(allRecords.map(r => `${r.user_id}|${r.user_name}`)).size;
+    const m = allRecords.filter(r => r.email !== 'missing email').length;
+    const ms = allRecords.length - m;
+    data.push(['Overall Counts', '', '', '']);
+    data.push(['Total Training Assignments', allRecords.length, '', '']);
+    data.push(['Unique People', uu, '', '']);
+    data.push(['Unique Managers', new Set(allRecords.map(r => r.manager_name || '')).size, '', '']);
+    data.push(['Unique Trainings (courses)', new Set(allRecords.map(r => r.course_id)).size, '', '']);
+    data.push(['', '', '', '']);
+    data.push(['Email Match Status', '', '', '']);
+    data.push(['Records with email found', m, '', '']);
+    data.push(['Records with missing email', ms, '', '']);
+    data.push(['Match rate', allRecords.length ? `${(m / allRecords.length * 100).toFixed(1)}%` : '0%', '', '']);
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{wch:38},{wch:14},{wch:16},{wch:18}];
+    return ws;
+  }
+  XLSX.utils.book_append_sheet(wb, makeSummary(allRecords, sourceGroups), 'Summary');
+  XLSX.utils.book_append_sheet(wb, makeSheet(`All Training Records - ${today}`, allRecords), 'All Trainings');
+  const we = allRecords.filter(r => r.email !== 'missing email');
+  const me = allRecords.filter(r => r.email === 'missing email');
+  XLSX.utils.book_append_sheet(wb, makeSheet(`Records with Matched Email - ${today}`, we), 'With Email');
+  XLSX.utils.book_append_sheet(wb, makeSheet(`Records Needing Email Lookup - ${today}`, me), 'Missing Email');
+  for (const [src, recs] of sourceGroups) {
+    if (!recs.length) continue;
+    const safe = src.replace(/[\\/?*\[\]:]/g, '_').slice(0, 28);
+    XLSX.utils.book_append_sheet(wb, makeSheet(`${src} - ${today}`, recs), safe);
+  }
+  XLSX.utils.book_append_sheet(wb, makeByMgr(allRecords), 'By Manager');
+  return wb;
+}
+
+// =============== Bulk email HTML (single grouped table) ===============
+function buildBulkEmailHTML(allRecords) {
+  const matched = allRecords.filter(r => r.email !== 'missing email');
+  // Group by user
+  const groups = new Map();
+  for (const r of matched) {
+    const key = `${r.user_name}|${r.email}`;
+    if (!groups.has(key)) groups.set(key, { name: r.user_name, email: r.email, manager: r.manager_name, recs: [] });
+    groups.get(key).recs.push(r);
+  }
+  // Sort each user's records by urgency
+  for (const g of groups.values()) {
+    g.recs.sort((a, b) => (safeInt(a.days_remaining) ?? 999) - (safeInt(b.days_remaining) ?? 999));
+  }
+  // Sort users by their most urgent record
+  const sorted = Array.from(groups.values()).sort((a, b) => {
+    const dA = Math.min(...a.recs.map(r => safeInt(r.days_remaining) ?? 999));
+    const dB = Math.min(...b.recs.map(r => safeInt(r.days_remaining) ?? 999));
+    if (dA !== dB) return dA - dB;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' });
+  const overdue = matched.filter(r => (safeInt(r.days_remaining) ?? 0) < 0).length;
+  const dueSoon = matched.filter(r => { const d = safeInt(r.days_remaining); return d !== null && d >= 0 && d <= 7; }).length;
+  const peopleCount = sorted.length;
+
+  // Build the rows: per person header row + their training rows
+  const tableRows = [];
+  for (const g of sorted) {
+    const { first, last } = splitUserName(g.name);
+    const fullName = first && last ? `${first} ${last}` : g.name;
+    const personHeader = `<tr style="background:#f0f0f0;border-top:2px solid #86BC25;">
+      <td colspan="4" style="padding:10px 12px;">
+        <div style="font-weight:700;font-size:14px;color:#000;">${escapeHtml(fullName)}</div>
+        <div style="font-size:12px;color:#555;margin-top:2px;">${escapeHtml(g.email)} · Manager: ${escapeHtml(g.manager || '—')} · ${g.recs.length} pending training${g.recs.length === 1 ? '' : 's'}</div>
+      </td>
+    </tr>`;
+    tableRows.push(personHeader);
+    for (const r of g.recs) {
+      const d = safeInt(r.days_remaining);
+      let daysHtml, rowStyle = '';
+      if (d === null) { daysHtml = '—'; }
+      else if (d < 0) { daysHtml = `<b style="color:#DA291C;">${Math.abs(d)} days OVERDUE</b>`; rowStyle = 'background:#fef0ef;'; }
+      else if (d === 0) { daysHtml = `<b style="color:#DA291C;">Due TODAY</b>`; rowStyle = 'background:#fef0ef;'; }
+      else if (d <= 7) { daysHtml = `<b style="color:#8a5500;">${d} days</b>`; rowStyle = 'background:#fff8e8;'; }
+      else { daysHtml = `${d} days`; }
+      const typeShort = (r.assignment_type || '').split(' ')[0];
+      tableRows.push(`<tr style="${rowStyle}">
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:13px;">${escapeHtml(r.course_title || '')}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:13px;white-space:nowrap;">${escapeHtml(r.required_date || '')}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:13px;text-align:center;">${daysHtml}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:13px;color:#555;">${escapeHtml(typeShort)}</td>
+      </tr>`);
+    }
+  }
+
+  return `<!DOCTYPE html><html><body style="font-family:'Open Sans',Calibri,Arial,sans-serif;color:#282728;max-width:900px;font-size:14px;line-height:1.6;">
+<div style="border-top:4px solid #86BC25;padding-top:16px;">
+<p style="font-size:15px;">Hello,</p>
+
+<p>This is a friendly reminder regarding your outstanding training assignments. Our records show <b>${matched.length}</b> pending training assignment${matched.length === 1 ? '' : 's'} across <b>${peopleCount}</b> ${peopleCount === 1 ? 'person' : 'people'}${overdue > 0 ? `, of which <b style="color:#DA291C;">${overdue} ${overdue === 1 ? 'is' : 'are'} already overdue</b>` : ''}${dueSoon > 0 ? ` and <b>${dueSoon} ${dueSoon === 1 ? 'is' : 'are'} due within the next 7 days</b>` : ''}.</p>
+
+<p>Please review the breakdown below and complete your assigned trainings before their respective due dates. The full record is attached as an Excel file for your convenience.</p>
+
+<table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%;border:1px solid #d0d0d0;margin:16px 0;font-family:'Open Sans',Calibri,Arial,sans-serif;">
+  <thead>
+    <tr style="background:#000000;color:#FFFFFF;">
+      <th style="padding:11px 12px;text-align:left;font-weight:700;font-size:12px;letter-spacing:0.05em;">Training</th>
+      <th style="padding:11px 12px;text-align:left;font-weight:700;font-size:12px;letter-spacing:0.05em;">Required Date</th>
+      <th style="padding:11px 12px;text-align:center;font-weight:700;font-size:12px;letter-spacing:0.05em;">Days Remaining</th>
+      <th style="padding:11px 12px;text-align:left;font-weight:700;font-size:12px;letter-spacing:0.05em;">Type</th>
+    </tr>
+  </thead>
+  <tbody>${tableRows.join('')}</tbody>
+</table>
+
+<p>If you have already completed any of these trainings, please disregard that line — the system should update shortly. For any questions, please reach out to your manager directly.</p>
+
+<p>Thank you for your prompt attention to this matter.</p>
+
+<p style="margin-top:20px;">Best regards,<br>
+<b>Compliance &amp; Training Team</b><br>
+<span style="color:#86BC25;font-style:italic;font-weight:600;">Together makes progress.</span></p>
+
+<p style="color:#888;font-size:11px;margin-top:24px;border-top:1px solid #e0e0e0;padding-top:10px;">Generated ${today}</p>
+</div>
+</body></html>`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function downloadFile(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+function getRecipientList() {
+  const matched = state.results.allRecords.filter(r => r.email !== 'missing email');
+  return Array.from(new Set(matched.map(r => r.email.trim())));
+}
+
+// =============== Rich-HTML clipboard ===============
+async function copyRichHtml(htmlString, plainString) {
+  if (typeof ClipboardItem !== 'undefined' && navigator.clipboard && navigator.clipboard.write) {
+    try {
+      const htmlBlob = new Blob([htmlString], { type: 'text/html' });
+      const textBlob = new Blob([plainString], { type: 'text/plain' });
+      await navigator.clipboard.write([new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob })]);
+      return true;
+    } catch (e) {}
+  }
+  try {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = htmlString;
+    tmp.setAttribute('contenteditable', 'true');
+    tmp.style.position = 'fixed'; tmp.style.left = '-99999px'; tmp.style.opacity = '0';
+    document.body.appendChild(tmp);
+    const range = document.createRange(); range.selectNodeContents(tmp);
+    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    const ok = document.execCommand('copy');
+    sel.removeAllRanges(); document.body.removeChild(tmp);
+    return ok;
+  } catch (e) { return false; }
+}
+async function copyToClipboardText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); document.body.removeChild(ta); return true; }
+  catch (e) { document.body.removeChild(ta); return false; }
+}
+function flashCopiedButton(btnId, originalText) {
+  const btn = document.getElementById(btnId);
+  btn.textContent = 'Copied!';
+  btn.classList.add('copied');
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.textContent = originalText;
+    btn.classList.remove('copied');
+    btn.disabled = false;
+  }, 1800);
+}
+function buildBulkEmailPlainText(allRecords) {
+  const matched = allRecords.filter(r => r.email !== 'missing email');
+  const groups = new Map();
+  for (const r of matched) {
+    const key = `${r.user_name}|${r.email}`;
+    if (!groups.has(key)) groups.set(key, { name: r.user_name, email: r.email, manager: r.manager_name, recs: [] });
+    groups.get(key).recs.push(r);
+  }
+  const sorted = Array.from(groups.values()).sort((a, b) => {
+    const dA = Math.min(...a.recs.map(r => safeInt(r.days_remaining) ?? 999));
+    const dB = Math.min(...b.recs.map(r => safeInt(r.days_remaining) ?? 999));
+    return dA - dB;
+  });
+  const lines = [];
+  lines.push('Hello,');
+  lines.push('');
+  lines.push(`This is a friendly reminder regarding outstanding training assignments. Our records show ${matched.length} pending across ${sorted.length} ${sorted.length === 1 ? 'person' : 'people'}.`);
+  lines.push('');
+  for (const g of sorted) {
+    const { first, last } = splitUserName(g.name);
+    const fullName = first && last ? `${first} ${last}` : g.name;
+    lines.push(`${fullName} | ${g.email} | Manager: ${g.manager || '—'}`);
+    for (const r of g.recs) {
+      const d = safeInt(r.days_remaining);
+      let ds = d === null ? '-' : d < 0 ? `${Math.abs(d)}d OVERDUE` : d === 0 ? 'Due TODAY' : `${d}d`;
+      lines.push(`  • ${r.course_title} (${r.required_date}, ${ds})`);
+    }
+    lines.push('');
+  }
+  lines.push('If you have already completed any of these, please disregard. For questions, contact your manager.');
+  lines.push('');
+  lines.push('Best regards,');
+  lines.push('Compliance & Training Team');
+  lines.push('Together makes progress.');
+  return lines.join('\n');
+}
+
+// =============== Notify actions ===============
+document.getElementById('open-outlook-btn').addEventListener('click', () => {
+  if (!state.results) return;
+  const subject = `Training Compliance: ${state.results.stats.matched} pending training assignments require attention`;
+  window.location.href = `mailto:?subject=${encodeURIComponent(subject)}`;
+});
+document.getElementById('preview-email-btn').addEventListener('click', () => {
+  if (!state.results) return;
+  const fullHtml = buildBulkEmailHTML(state.results.allRecords);
+  const m = fullHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  document.getElementById('email-preview-frame').innerHTML = m ? m[1] : fullHtml;
+  document.getElementById('preview-modal').classList.add('show');
+});
+document.getElementById('preview-modal-close-x').addEventListener('click', () => document.getElementById('preview-modal').classList.remove('show'));
+document.getElementById('preview-modal-close-btn').addEventListener('click', () => document.getElementById('preview-modal').classList.remove('show'));
+document.getElementById('preview-modal').addEventListener('click', (e) => { if (e.target.id === 'preview-modal') document.getElementById('preview-modal').classList.remove('show'); });
+
+async function handleCopyBody(triggerBtnId) {
+  if (!state.results) return;
+  const fullHtml = buildBulkEmailHTML(state.results.allRecords);
+  const m = fullHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  const inner = m ? m[1] : fullHtml;
+  const plain = buildBulkEmailPlainText(state.results.allRecords);
+  const ok = await copyRichHtml(inner, plain);
+  if (ok) {
+    if (triggerBtnId === 'copy-body-btn') flashCopiedButton('copy-body-btn', '📋 Copy email body');
+    else if (triggerBtnId === 'preview-copy-btn') flashCopiedButton('preview-copy-btn', '📋 Copy email body');
+  } else {
+    alert('Could not copy automatically. Use the "Preview email" button, then select all & copy from there.');
+  }
+}
+document.getElementById('copy-body-btn').addEventListener('click', () => handleCopyBody('copy-body-btn'));
+document.getElementById('preview-copy-btn').addEventListener('click', () => handleCopyBody('preview-copy-btn'));
+
+document.getElementById('copy-recipients-btn').addEventListener('click', async () => {
+  if (!state.results) return;
+  const recipients = getRecipientList();
+  if (!recipients.length) { alert('No matched email addresses found.'); return; }
+  const ok = await copyToClipboardText(recipients.join('; '));
+  if (ok) flashCopiedButton('copy-recipients-btn', '📋 Copy recipients');
+});
+document.getElementById('dl-xlsx-btn').addEventListener('click', () => {
+  if (state.results) {
+    downloadFile(state.results.xlsxBlob, 'Training Compliance Report.xlsx');
+    flashCopiedButton('dl-xlsx-btn', '⬇ Download Excel');
+  }
+});
+
+// =============== Grouped table render ===============
+function buildPersonGroups() {
+  if (!state.results) return [];
+  const all = state.results.allRecords;
+  const groups = new Map();
+  for (const r of all) {
+    const key = `${r.user_name}|${r.email}`;
+    if (!groups.has(key)) groups.set(key, { name: r.user_name, email: r.email, manager: r.manager_name, recs: [] });
+    groups.get(key).recs.push(r);
+  }
+  // Sort recs within each group
+  for (const g of groups.values()) {
+    g.recs.sort((a, b) => (safeInt(a.days_remaining) ?? 999) - (safeInt(b.days_remaining) ?? 999));
+  }
+  // Sort groups: most urgent person first, then alphabetical
+  const arr = Array.from(groups.values()).sort((a, b) => {
+    const dA = Math.min(...a.recs.map(r => safeInt(r.days_remaining) ?? 999));
+    const dB = Math.min(...b.recs.map(r => safeInt(r.days_remaining) ?? 999));
+    if (dA !== dB) return dA - dB;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+  return arr;
+}
+function applyFilters() {
+  if (!state.results) return;
+  const allGroups = state.results.personGroups;
+  const q = state.searchQuery.toLowerCase().trim();
+  const filter = state.activeFilter;
+
+  state.filteredGroups = allGroups.map(g => {
+    let recs = g.recs;
+    if (filter === 'overdue') recs = recs.filter(r => { const d = safeInt(r.days_remaining); return d !== null && d < 0; });
+    else if (filter === 'duesoon') recs = recs.filter(r => { const d = safeInt(r.days_remaining); return d !== null && d >= 0 && d <= 7; });
+    if (filter === 'missing' && g.email !== 'missing email') return null;
+    if (filter === 'matched' && g.email === 'missing email') return null;
+    if (recs.length === 0) return null;
+    if (q) {
+      const hay = [g.name, g.email, g.manager, recs.map(r => r.course_title).join(' '), recs.map(r => r.course_id).join(' ')].join(' ').toLowerCase();
+      if (!hay.includes(q)) return null;
+    }
+    return { ...g, recs };
+  }).filter(Boolean);
+
+  state.currentPage = 1;
+  renderGroupedTable();
+}
+function renderGroupedTable() {
+  const container = document.getElementById('grouped-list');
+  container.innerHTML = '';
+  const total = state.filteredGroups.length;
+  const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
+  state.currentPage = Math.min(state.currentPage, totalPages);
+  const start = (state.currentPage - 1) * state.pageSize;
+  const end = Math.min(start + state.pageSize, total);
+  const page = state.filteredGroups.slice(start, end);
+
+  for (const g of page) {
+    const { first, last } = splitUserName(g.name);
+    const fullName = first && last ? `${first} ${last}` : g.name;
+    const isMissing = g.email === 'missing email';
+    const personGroup = document.createElement('div');
+    personGroup.className = 'person-group';
+
+    const header = document.createElement('div');
+    header.className = `person-header ${isMissing ? 'no-email' : ''}`;
+    header.innerHTML = `
+      <div class="person-name">${escapeHtml(fullName)}</div>
+      <div class="person-email ${isMissing ? 'missing' : ''}">${escapeHtml(isMissing ? 'Missing email — not in roster' : g.email)}</div>
+      <div class="person-manager"><span class="person-manager-label">Manager:</span>${escapeHtml(g.manager || '—')}</div>
+      <div class="person-count ${isMissing ? 'no-email' : ''}">${g.recs.length} ${g.recs.length === 1 ? 'training' : 'trainings'}</div>
+    `;
+    personGroup.appendChild(header);
+
+    const table = document.createElement('table');
+    table.className = 'training-table';
+    table.innerHTML = `<thead><tr><th>Training</th><th>Required date</th><th>Days remaining</th><th>Type</th></tr></thead><tbody></tbody>`;
+    const tbody = table.querySelector('tbody');
+    for (const r of g.recs) {
+      const tr = document.createElement('tr');
+      const days = safeInt(r.days_remaining);
+      let daysHtml = '';
+      if (days !== null) {
+        let cls = 'safe';
+        if (days < 0) cls = 'urgent';
+        else if (days <= 7) cls = 'warn';
+        daysHtml = `<span class="days-badge ${cls}">${days}</span>`;
+      }
+      const ts = (r.assignment_type || '').split(' ')[0];
+      const typeCls = ts === 'REQ' ? 'req' : ts === 'OPT' ? 'opt' : '';
+      tr.innerHTML = `
+        <td>
+          <div class="training-name">${escapeHtml(r.course_title || '')}</div>
+          <div class="training-id">ID: ${escapeHtml(r.course_id || '')}</div>
+        </td>
+        <td>${escapeHtml(r.required_date || '')}</td>
+        <td>${daysHtml}</td>
+        <td><span class="type-tag ${typeCls}">${escapeHtml(ts)}</span></td>
+      `;
+      tbody.appendChild(tr);
+    }
+    personGroup.appendChild(table);
+    container.appendChild(personGroup);
+  }
+
+  document.getElementById('table-count').textContent = total === 0 ? 'No people match' : `Showing ${start + 1}–${end} of ${total} people`;
+  document.getElementById('pg-info').textContent = `Page ${state.currentPage} / ${totalPages}`;
+  document.getElementById('pg-prev').disabled = state.currentPage <= 1;
+  document.getElementById('pg-next').disabled = state.currentPage >= totalPages;
+}
+
+document.getElementById('search-input').addEventListener('input', e => { state.searchQuery = e.target.value; applyFilters(); });
+document.querySelectorAll('.filter-pill').forEach(p => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.filter-pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+    state.activeFilter = p.dataset.filter;
+    applyFilters();
+  });
+});
+document.getElementById('pg-prev').addEventListener('click', () => { if (state.currentPage > 1) { state.currentPage--; renderGroupedTable(); } });
+document.getElementById('pg-next').addEventListener('click', () => { state.currentPage++; renderGroupedTable(); });
+
+// =============== Run agent ===============
+async function runAgent() {
+  document.getElementById('error-banner').classList.remove('show');
+  const runBtn = document.getElementById('run-btn');
+  runBtn.disabled = true;
+  document.getElementById('progress-section').classList.add('show');
+  document.getElementById('progress-log').innerHTML = '';
+
+  try {
+    setProgress(5, 'Reading rosters');
+    let rosterRecords = [];
+    for (const f of state.rosterFiles) {
+      const recs = await parseRoster(f);
+      rosterRecords = rosterRecords.concat(recs);
+      logProgress(`Loaded ${recs.length} entries from ${f.name}`);
+    }
+    if (!rosterRecords.length) throw new Error('No name+email pairs found in your roster files. Check the column headers.');
+    const lookup = buildEmailLookup(rosterRecords);
+    logProgress(`Built email lookup with ${lookup.size} variants`);
+
+    setProgress(15, 'Parsing PDFs');
+    const allRecords = [];
+    const sourceGroups = new Map();
+    const pdfCount = state.pdfFiles.length;
+    for (let i = 0; i < pdfCount; i++) {
+      const f = state.pdfFiles[i];
+      const sourceLabel = f.name.replace(/\.pdf$/i, '').slice(0, 26);
+      logProgress(`Parsing ${f.name}…`);
+      const base = 15 + (i / pdfCount) * 70;
+      const w = 70 / pdfCount;
+      const recs = await parsePDF(f, sourceLabel, (cur, total) => {
+        setProgress(base + (cur / total) * w, `Parsing ${f.name} · page ${cur} / ${total}`);
+      });
+      allRecords.push(...recs);
+      sourceGroups.set(sourceLabel, recs);
+      logProgress(`Extracted ${recs.length} records from ${f.name}`);
+    }
+    if (!allRecords.length) throw new Error('No training records were found in your PDFs.');
+
+    setProgress(88, 'Matching emails');
+    let matched = 0;
+    for (const r of allRecords) {
+      const e = findEmail(r.user_name, lookup);
+      if (e) { r.email = e; matched++; }
+      else r.email = 'missing email';
+    }
+    logProgress(`Matched ${matched} of ${allRecords.length} records`);
+
+    setProgress(94, 'Building Excel report');
+    const wb = buildExcel(allRecords, sourceGroups);
+    const xlsxBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+    state.results = {
+      allRecords,
+      sourceGroups,
+      personGroups: null,
+      xlsxBlob: new Blob([xlsxBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      stats: {
+        records: allRecords.length,
+        people: new Set(allRecords.map(r => `${r.user_id}|${r.user_name}`)).size,
+        matched,
+        missing: allRecords.length - matched,
+      },
+    };
+    state.results.personGroups = buildPersonGroups();
+
+    setProgress(100, 'Done');
+    logProgress('All artifacts ready.');
+
+    document.getElementById('s-records').textContent = state.results.stats.records;
+    document.getElementById('s-people').textContent = state.results.stats.people;
+    document.getElementById('s-matched').textContent = state.results.stats.matched;
+    document.getElementById('s-missing').textContent = state.results.stats.missing;
+
+    // Fill in the progress summary cards
+    const pdfTotal = state.pdfFiles.reduce((s, f) => s + f.size, 0);
+    const rosterTotal = state.rosterFiles.reduce((s, f) => s + f.size, 0);
+    document.getElementById('ps-1').textContent = `${state.pdfFiles.length} PDF${state.pdfFiles.length > 1 ? 's' : ''} · ${(pdfTotal / 1024).toFixed(0)} KB`;
+    document.getElementById('ps-2').textContent = `${state.rosterFiles.length} roster${state.rosterFiles.length > 1 ? 's' : ''} · ${(rosterTotal / 1024).toFixed(0)} KB`;
+    document.getElementById('ps-3').textContent = `${state.results.stats.records} records · ${state.results.stats.matched} matched`;
+
+    state.activeFilter = 'all';
+    state.searchQuery = '';
+    document.getElementById('search-input').value = '';
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.toggle('active', p.dataset.filter === 'all'));
+    applyFilters();
+
+    setTimeout(() => {
+      setCarouselStep(4);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 600);
+  } catch (err) {
+    console.error(err);
+    showError(`Something went wrong: ${err.message}`);
+    setProgress(0, 'Error — see message above');
+    runBtn.disabled = false;
+  }
+}
+document.getElementById('run-btn').addEventListener('click', runAgent);
+
+// Init
+setCarouselStep(1);
+</script>
+
+</body>
+</html>
